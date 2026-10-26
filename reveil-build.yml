@@ -1,0 +1,670 @@
+name: Construire l'APK Réveil
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Générer le projet Android
+        run: |
+          mkdir -p "$(dirname "settings.gradle")"
+          cat > 'settings.gradle' <<'RV_EOF_0'
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          rootProject.name = "Reveil58"
+          include ':app'
+          RV_EOF_0
+          mkdir -p "$(dirname "build.gradle")"
+          cat > 'build.gradle' <<'RV_EOF_1'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          RV_EOF_1
+          mkdir -p "$(dirname "gradle.properties")"
+          cat > 'gradle.properties' <<'RV_EOF_2'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          RV_EOF_2
+          mkdir -p "$(dirname "app/build.gradle")"
+          cat > 'app/build.gradle' <<'RV_EOF_3'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'fr.hack68.reveil'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId 'fr.hack68.reveil'
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              signingConfigs {
+                  fixe {
+                      storeFile file('reveil.keystore')
+                      storePassword 'reveil58'
+                      keyAlias 'reveil'
+                      keyPassword 'reveil58'
+                  }
+              }
+
+              buildTypes {
+                  debug { signingConfig signingConfigs.fixe }
+                  release { signingConfig signingConfigs.fixe; minifyEnabled false }
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          RV_EOF_3
+          mkdir -p "$(dirname "app/src/main/AndroidManifest.xml")"
+          cat > 'app/src/main/AndroidManifest.xml' <<'RV_EOF_4'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+              <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+              <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+              <uses-permission android:name="android.permission.VIBRATE" />
+              <uses-permission android:name="android.permission.WAKE_LOCK" />
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+              <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+              <application
+                  android:label="Réveil 5×8"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher"
+                  android:theme="@android:style/Theme.Material.NoActionBar"
+                  android:allowBackup="false">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+                  <activity
+                      android:name=".AlarmeActivity"
+                      android:exported="false"
+                      android:showWhenLocked="true"
+                      android:turnScreenOn="true"
+                      android:excludeFromRecents="true"
+                      android:launchMode="singleInstance"
+                      android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
+                  <service
+                      android:name=".SonnerieService"
+                      android:exported="false"
+                      android:foregroundServiceType="mediaPlayback" />
+                  <receiver android:name=".Alarme" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.BOOT_COMPLETED" />
+                          <action android:name="android.intent.action.TIME_SET" />
+                          <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                          <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                      </intent-filter>
+                  </receiver>
+              </application>
+          </manifest>
+          RV_EOF_4
+          mkdir -p "$(dirname "app/src/main/res/values/colors.xml")"
+          cat > 'app/src/main/res/values/colors.xml' <<'RV_EOF_5'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="fond_icone">#1F2830</color>
+          </resources>
+          RV_EOF_5
+          mkdir -p "$(dirname "app/src/main/res/drawable/ic_reveil.xml")"
+          cat > 'app/src/main/res/drawable/ic_reveil.xml' <<'RV_EOF_6'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp" android:height="24dp"
+              android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FFFFFF"
+                  android:pathData="M12,4a8,8 0,1 0,0.01 0zM12,6a6,6 0,1 1,-0.01 0zM11,8v4.4l3.3,2 0.8,-1.3 -2.6,-1.6V8zM3.5,5.8L6.6,3.2 5.3,1.7 2.2,4.3zM20.5,5.8l1.3,-1.5 -3.1,-2.6 -1.3,1.5z" />
+          </vector>
+          RV_EOF_6
+          mkdir -p "$(dirname "app/src/main/res/drawable/ic_avant.xml")"
+          cat > 'app/src/main/res/drawable/ic_avant.xml' <<'RV_EOF_7'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#F2C400"
+                  android:pathData="M54,30a24,24 0,1 0,0.01 0zM54,36a18,18 0,1 1,-0.01 0z" />
+              <path android:fillColor="#F2C400"
+                  android:pathData="M51,40h6v14l9,6 -3,5 -12,-8z" />
+              <path android:fillColor="#E8692A"
+                  android:pathData="M30,36l9,-8 -4,-4 -9,8zM78,36l-9,-8 4,-4 9,8z" />
+          </vector>
+          RV_EOF_7
+          mkdir -p "$(dirname "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml")"
+          cat > 'app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml' <<'RV_EOF_8'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/fond_icone" />
+              <foreground android:drawable="@drawable/ic_avant" />
+          </adaptive-icon>
+          RV_EOF_8
+          mkdir -p "$(dirname "app/src/main/java/fr/hack68/reveil/MainActivity.java")"
+          cat > 'app/src/main/java/fr/hack68/reveil/MainActivity.java' <<'RV_EOF_9'
+          package fr.hack68.reveil;
+
+          import android.app.Activity;
+          import android.app.AlarmManager;
+          import android.app.NotificationManager;
+          import android.content.Intent;
+          import android.content.pm.PackageManager;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.PowerManager;
+          import android.provider.Settings;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import org.json.JSONObject;
+
+          public class MainActivity extends Activity {
+              private WebView web;
+
+              @Override
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  web = new WebView(this);
+                  WebSettings s = web.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  web.setWebViewClient(new WebViewClient());
+                  web.addJavascriptInterface(new Pont(), "Natif");
+                  setContentView(web);
+                  web.loadUrl("file:///android_asset/index.html");
+                  if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED)
+                      requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1);
+                  Reveil.planifier(getApplicationContext());
+              }
+
+              @Override
+              protected void onResume() {
+                  super.onResume();
+                  if (web != null) web.evaluateJavascript("window.majEcran&&majEcran()", null);
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (web.canGoBack()) web.goBack(); else super.onBackPressed();
+              }
+
+              private void ouvrir(Intent i) {
+                  try { startActivity(i); } catch (Exception e) {
+                      startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())));
+                  }
+              }
+
+              class Pont {
+                  @JavascriptInterface public void config(String json) {
+                      Reveil.prefs(MainActivity.this).edit().putString("cfg", json).apply();
+                      Reveil.planifier(getApplicationContext());
+                  }
+
+                  /** Infos du prochain réveil pour l’écran. */
+                  @JavascriptInterface public String prochain() {
+                      android.content.SharedPreferences p = Reveil.prefs(MainActivity.this);
+                      try {
+                          JSONObject o = new JSONObject();
+                          o.put("quand", p.getString("prochain", ""));
+                          o.put("poste", p.getString("prochainPoste", ""));
+                          o.put("passe", p.getString("passe", ""));
+                          o.put("repetition", p.getString("repetition", ""));
+                          return o.toString();
+                      } catch (Exception e) { return "{}"; }
+                  }
+
+                  @JavascriptInterface public void passer() {
+                      android.content.SharedPreferences p = Reveil.prefs(MainActivity.this);
+                      p.edit().putLong("saute", p.getLong("prochainMs", 0)).apply();
+                      Reveil.planifier(getApplicationContext());
+                  }
+
+                  @JavascriptInterface public void reprendre() {
+                      Reveil.prefs(MainActivity.this).edit().putLong("saute", 0).apply();
+                      Reveil.planifier(getApplicationContext());
+                  }
+
+                  @JavascriptInterface public void tester() {
+                      Reveil.programmer(getApplicationContext(), System.currentTimeMillis() + 5000, 3, "Test");
+                  }
+
+                  @JavascriptInterface public String systeme() {
+                      try {
+                          NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                          AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+                          PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+                          JSONObject o = new JSONObject();
+                          o.put("notif", nm.areNotificationsEnabled());
+                          o.put("plein", Build.VERSION.SDK_INT < 34 || nm.canUseFullScreenIntent());
+                          o.put("reveils", Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms());
+                          o.put("batterie", pm.isIgnoringBatteryOptimizations(getPackageName()));
+                          return o.toString();
+                      } catch (Exception e) { return "{}"; }
+                  }
+
+                  @JavascriptInterface public void reglage(String quoi) {
+                      runOnUiThread(() -> {
+                          Uri pkg = Uri.parse("package:" + getPackageName());
+                          if ("notif".equals(quoi)) ouvrir(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
+                          else if ("plein".equals(quoi) && Build.VERSION.SDK_INT >= 34) ouvrir(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, pkg));
+                          else if ("reveils".equals(quoi) && Build.VERSION.SDK_INT >= 31) ouvrir(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, pkg));
+                          else if ("batterie".equals(quoi)) ouvrir(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg));
+                      });
+                  }
+              }
+          }
+          RV_EOF_9
+          mkdir -p "$(dirname "app/src/main/java/fr/hack68/reveil/Reveil.java")"
+          cat > 'app/src/main/java/fr/hack68/reveil/Reveil.java' <<'RV_EOF_10'
+          package fr.hack68.reveil;
+
+          import android.app.AlarmManager;
+          import android.app.PendingIntent;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import java.time.LocalDate;
+          import java.time.LocalDateTime;
+          import java.time.ZoneId;
+          import java.time.format.DateTimeFormatter;
+          import java.time.temporal.ChronoUnit;
+          import java.util.Locale;
+          import org.json.JSONObject;
+
+          /** Cycle 5×8 et programmation des réveils. */
+          public class Reveil {
+              static final String SONNER = "fr.hack68.reveil.SONNER";
+              static final String[] CYCLE = {"M", "M", "A", "A", "N1", "N2", "R", "R", "R", "R"};
+              static final String[][] NOMS = {{"M", "Matin"}, {"A", "Après-midi"}, {"N1", "Nuit 1"}, {"N2", "Nuit 2"}, {"R", "Repos"}};
+
+              static SharedPreferences prefs(Context c) { return c.getSharedPreferences("reveil", Context.MODE_PRIVATE); }
+
+              static JSONObject cfg(Context c) {
+                  try { return new JSONObject(prefs(c).getString("cfg", "{}")); } catch (Exception e) { return new JSONObject(); }
+              }
+
+              static String nom(String p) {
+                  for (String[] n : NOMS) if (n[0].equals(p)) return n[1];
+                  return p;
+              }
+
+              /** Poste du jour : M, A, N1, N2, R, ou X (pas de réveil ce jour-là). */
+              static String poste(JSONObject cfg, LocalDate d) {
+                  JSONObject ov = cfg.optJSONObject("overrides");
+                  if (ov != null && ov.has(d.toString())) return "X".equals(ov.optString(d.toString())) ? "X" : "R";
+                  LocalDate debut;
+                  try { debut = LocalDate.parse(cfg.optString("debut", "2026-10-25")); } catch (Exception e) { debut = LocalDate.of(2026, 10, 25); }
+                  long n = ChronoUnit.DAYS.between(debut, d);
+                  return CYCLE[(int) (((n % 10) + 10) % 10)];
+              }
+
+              /** Heure du réveil en minutes, ou -1 si pas de réveil pour ce poste. */
+              static int heure(JSONObject cfg, String p) {
+                  if ("X".equals(p)) return -1;
+                  JSONObject h = cfg.optJSONObject("heures");
+                  JSONObject x = h == null ? null : h.optJSONObject(p);
+                  if (x == null || !x.optBoolean("on", true)) return -1;
+                  try {
+                      String[] t = x.optString("t", "").split(":");
+                      return Integer.parseInt(t[0]) * 60 + Integer.parseInt(t[1]);
+                  } catch (Exception e) { return -1; }
+              }
+
+              static LocalDateTime prochain(JSONObject cfg, LocalDateTime apres) {
+                  for (int j = 0; j < 14; j++) {
+                      LocalDate d = apres.toLocalDate().plusDays(j);
+                      int m = heure(cfg, poste(cfg, d));
+                      if (m < 0) continue;
+                      LocalDateTime dt = d.atStartOfDay().plusMinutes(m);
+                      if (dt.isAfter(apres)) return dt;
+                  }
+                  return null;
+              }
+
+              static long ms(LocalDateTime t) { return t.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(); }
+
+              static String quand(LocalDateTime t) {
+                  LocalDate auj = LocalDate.now();
+                  String h = t.format(DateTimeFormatter.ofPattern("HH:mm"));
+                  if (t.toLocalDate().equals(auj)) return "Aujourd’hui " + h;
+                  if (t.toLocalDate().equals(auj.plusDays(1))) return "Demain " + h;
+                  return t.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRENCH)) + " " + h;
+              }
+
+              /** Programme le prochain réveil du planning (en sautant celui qu’on a choisi de passer). */
+              static void planifier(Context c) {
+                  JSONObject cfg = cfg(c);
+                  SharedPreferences sp = prefs(c);
+                  long saute = sp.getLong("saute", 0);
+                  if (saute != 0 && saute < System.currentTimeMillis()) { saute = 0; sp.edit().putLong("saute", 0).apply(); }
+                  LocalDateTime t = prochain(cfg, LocalDateTime.now());
+                  String passe = "";
+                  if (t != null && ms(t) == saute) {
+                      passe = quand(t) + " (" + nom(poste(cfg, t.toLocalDate())) + ")";
+                      t = prochain(cfg, t);
+                  }
+                  if (t == null) {
+                      annuler(c, 1);
+                      sp.edit().putString("prochain", "").putLong("prochainMs", 0).putString("passe", passe).apply();
+                      return;
+                  }
+                  String label = nom(poste(cfg, t.toLocalDate()));
+                  programmer(c, ms(t), 1, label);
+                  sp.edit().putString("prochain", quand(t)).putString("prochainPoste", label).putLong("prochainMs", ms(t)).putString("passe", passe).apply();
+              }
+
+              static PendingIntent intention(Context c, int code, String label) {
+                  Intent i = new Intent(c, Alarme.class).setAction(SONNER).putExtra("label", label).putExtra("code", code);
+                  return PendingIntent.getBroadcast(c, code, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+              }
+
+              /** setAlarmClock : heure exacte, même en veille, icône réveil dans la barre d’état. */
+              static void programmer(Context c, long quand, int code, String label) {
+                  AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+                  PendingIntent pi = intention(c, code, label);
+                  PendingIntent ecran = PendingIntent.getActivity(c, 0, new Intent(c, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
+                  try {
+                      am.setAlarmClock(new AlarmManager.AlarmClockInfo(quand, ecran), pi);
+                  } catch (SecurityException e) {
+                      am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, quand, pi);
+                  }
+              }
+
+              static void annuler(Context c, int code) {
+                  ((AlarmManager) c.getSystemService(Context.ALARM_SERVICE)).cancel(intention(c, code, ""));
+              }
+          }
+          RV_EOF_10
+          mkdir -p "$(dirname "app/src/main/java/fr/hack68/reveil/Alarme.java")"
+          cat > 'app/src/main/java/fr/hack68/reveil/Alarme.java' <<'RV_EOF_11'
+          package fr.hack68.reveil;
+
+          import android.content.BroadcastReceiver;
+          import android.content.Context;
+          import android.content.Intent;
+
+          /** Heure du réveil (ou redémarrage / changement d’heure du téléphone). */
+          public class Alarme extends BroadcastReceiver {
+              @Override
+              public void onReceive(Context ctx, Intent intent) {
+                  Context c = ctx.getApplicationContext();
+                  if (Reveil.SONNER.equals(intent.getAction())) {
+                      Intent s = new Intent(c, SonnerieService.class).setAction(SonnerieService.SONNER)
+                              .putExtra("label", intent.getStringExtra("label"));
+                      c.startForegroundService(s);
+                  }
+                  Reveil.planifier(c); // le suivant
+              }
+          }
+          RV_EOF_11
+          mkdir -p "$(dirname "app/src/main/java/fr/hack68/reveil/SonnerieService.java")"
+          cat > 'app/src/main/java/fr/hack68/reveil/SonnerieService.java' <<'RV_EOF_12'
+          package fr.hack68.reveil;
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.app.Service;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.pm.ServiceInfo;
+          import android.graphics.drawable.Icon;
+          import android.media.AudioAttributes;
+          import android.media.AudioManager;
+          import android.media.MediaPlayer;
+          import android.media.RingtoneManager;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Handler;
+          import android.os.IBinder;
+          import android.os.Looper;
+          import android.os.PowerManager;
+          import android.os.VibrationEffect;
+          import android.os.Vibrator;
+          import java.time.LocalTime;
+          import java.time.format.DateTimeFormatter;
+
+          /** Fait sonner le réveil (son sur le canal « alarme », même téléphone en silencieux). */
+          public class SonnerieService extends Service {
+              static final String SONNER = "SONNER", ARRETER = "ARRETER", REPETER = "REPETER";
+              static final String CANAL = "reveil_sonnerie";
+              static volatile AlarmeActivity ecran;
+              static volatile String labelEnCours = "";
+
+              private MediaPlayer mp;
+              private Vibrator vib;
+              private PowerManager.WakeLock verrou;
+              private final Handler h = new Handler(Looper.getMainLooper());
+              private float volume = 0.15f;
+
+              @Override public IBinder onBind(Intent i) { return null; }
+
+              @Override
+              public int onStartCommand(Intent intent, int flags, int id) {
+                  String a = intent == null ? SONNER : String.valueOf(intent.getAction());
+                  if (ARRETER.equals(a)) { arreter(); stopSelf(); return START_NOT_STICKY; }
+                  if (REPETER.equals(a)) {
+                      int min = Reveil.cfg(this).optInt("snooze", 5);
+                      Reveil.programmer(this, System.currentTimeMillis() + min * 60000L, 2, labelEnCours + " (répétition)");
+                      Reveil.prefs(this).edit().putString("repetition", LocalTime.now().plusMinutes(min).format(DateTimeFormatter.ofPattern("HH:mm"))).apply();
+                      arreter(); stopSelf(); return START_NOT_STICKY;
+                  }
+                  String label = intent == null ? "" : intent.getStringExtra("label");
+                  labelEnCours = label == null ? "" : label;
+                  Reveil.prefs(this).edit().putString("repetition", "").apply();
+                  Notification n = notification(labelEnCours);
+                  if (Build.VERSION.SDK_INT >= 29) startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+                  else startForeground(1, n);
+                  jouer();
+                  h.postDelayed(() -> { arreter(); stopSelf(); }, 10 * 60000L); // coupe tout seul après 10 min
+                  return START_NOT_STICKY;
+              }
+
+              private Notification notification(String label) {
+                  NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                  NotificationChannel ch = new NotificationChannel(CANAL, "Réveil qui sonne", NotificationManager.IMPORTANCE_HIGH);
+                  ch.setSound(null, null);
+                  ch.enableVibration(false);
+                  ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                  nm.createNotificationChannel(ch);
+
+                  Intent ecranI = new Intent(this, AlarmeActivity.class).putExtra("label", label)
+                          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+                  PendingIntent plein = PendingIntent.getActivity(this, 3, ecranI, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                  PendingIntent stop = PendingIntent.getService(this, 4, new Intent(this, SonnerieService.class).setAction(ARRETER), PendingIntent.FLAG_IMMUTABLE);
+                  PendingIntent rep = PendingIntent.getService(this, 5, new Intent(this, SonnerieService.class).setAction(REPETER), PendingIntent.FLAG_IMMUTABLE);
+                  int min = Reveil.cfg(this).optInt("snooze", 5);
+                  Icon ic = Icon.createWithResource(this, R.drawable.ic_reveil);
+                  return new Notification.Builder(this, CANAL)
+                          .setSmallIcon(R.drawable.ic_reveil)
+                          .setContentTitle("⏰ " + LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + " · Debout !")
+                          .setContentText(label)
+                          .setCategory(Notification.CATEGORY_ALARM)
+                          .setVisibility(Notification.VISIBILITY_PUBLIC)
+                          .setFullScreenIntent(plein, true)
+                          .setContentIntent(plein)
+                          .setOngoing(true)
+                          .addAction(new Notification.Action.Builder(ic, "Répéter " + min + " min", rep).build())
+                          .addAction(new Notification.Action.Builder(ic, "Arrêter", stop).build())
+                          .build();
+              }
+
+              private void jouer() {
+                  PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                  verrou = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "reveil58:sonnerie");
+                  verrou.acquire(11 * 60000L);
+                  AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                  int max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+                  if (am.getStreamVolume(AudioManager.STREAM_ALARM) < max / 3) am.setStreamVolume(AudioManager.STREAM_ALARM, Math.max(1, max * 2 / 3), 0);
+                  try {
+                      Uri u = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM);
+                      if (u == null) u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+                      mp = new MediaPlayer();
+                      mp.setAudioAttributes(new AudioAttributes.Builder()
+                              .setUsage(AudioAttributes.USAGE_ALARM)
+                              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+                      mp.setDataSource(this, u);
+                      mp.setLooping(true);
+                      mp.prepare();
+                      mp.setVolume(volume, volume);
+                      mp.start();
+                      h.postDelayed(new Runnable() { // le son monte doucement en 30 s
+                          @Override public void run() {
+                              if (mp == null) return;
+                              volume = Math.min(1f, volume + 0.1f);
+                              try { mp.setVolume(volume, volume); } catch (Exception ignore) { }
+                              if (volume < 1f) h.postDelayed(this, 3000);
+                          }
+                      }, 3000);
+                  } catch (Exception ignore) { }
+                  if (Reveil.cfg(this).optBoolean("vibreur", true)) {
+                      vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                      if (vib != null) vib.vibrate(VibrationEffect.createWaveform(new long[]{0, 800, 700}, 0),
+                              new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build());
+                  }
+              }
+
+              private void arreter() {
+                  h.removeCallbacksAndMessages(null);
+                  if (mp != null) { try { mp.stop(); } catch (Exception ignore) { } mp.release(); mp = null; }
+                  if (vib != null) { vib.cancel(); vib = null; }
+                  if (verrou != null && verrou.isHeld()) verrou.release();
+                  stopForeground(true);
+                  AlarmeActivity e = ecran;
+                  if (e != null) e.finish();
+              }
+
+              @Override public void onDestroy() { arreter(); super.onDestroy(); }
+          }
+          RV_EOF_12
+          mkdir -p "$(dirname "app/src/main/java/fr/hack68/reveil/AlarmeActivity.java")"
+          cat > 'app/src/main/java/fr/hack68/reveil/AlarmeActivity.java' <<'RV_EOF_13'
+          package fr.hack68.reveil;
+
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.os.Bundle;
+          import android.view.Gravity;
+          import android.view.WindowManager;
+          import android.widget.Button;
+          import android.widget.LinearLayout;
+          import android.widget.TextView;
+          import java.time.LocalTime;
+          import java.time.format.DateTimeFormatter;
+
+          /** Écran plein qui s’affiche quand le réveil sonne, même téléphone verrouillé. */
+          public class AlarmeActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  if (android.os.Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(true); setTurnScreenOn(true); }
+                  else getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+                  getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                  SonnerieService.ecran = this;
+
+                  String label = getIntent().getStringExtra("label");
+                  int min = Reveil.cfg(this).optInt("snooze", 5);
+
+                  LinearLayout l = new LinearLayout(this);
+                  l.setOrientation(LinearLayout.VERTICAL);
+                  l.setGravity(Gravity.CENTER);
+                  l.setBackgroundColor(Color.parseColor("#151C21"));
+                  l.setPadding(48, 48, 48, 48);
+
+                  TextView heure = new TextView(this);
+                  heure.setText(LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
+                  heure.setTextColor(Color.WHITE);
+                  heure.setTextSize(88);
+                  heure.setTypeface(Typeface.DEFAULT_BOLD);
+                  heure.setGravity(Gravity.CENTER);
+                  l.addView(heure);
+
+                  TextView t = new TextView(this);
+                  t.setText(label == null || label.isEmpty() ? "Debout !" : label + " · debout !");
+                  t.setTextColor(Color.parseColor("#F2C400"));
+                  t.setTextSize(26);
+                  t.setGravity(Gravity.CENTER);
+                  t.setPadding(0, 12, 0, 80);
+                  l.addView(t);
+
+                  l.addView(bouton("Répéter " + min + " min", "#5F8298", SonnerieService.REPETER));
+                  l.addView(bouton("Arrêter", "#E8692A", SonnerieService.ARRETER));
+                  setContentView(l);
+              }
+
+              private Button bouton(String texte, String couleur, String action) {
+                  Button btn = new Button(this);
+                  btn.setText(texte);
+                  btn.setTextSize(24);
+                  btn.setAllCaps(false);
+                  btn.setTextColor(Color.WHITE);
+                  btn.setBackgroundColor(Color.parseColor(couleur));
+                  LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 180);
+                  p.setMargins(0, 24, 0, 0);
+                  btn.setLayoutParams(p);
+                  btn.setOnClickListener(v -> {
+                      startService(new Intent(this, SonnerieService.class).setAction(action));
+                      finish();
+                  });
+                  return btn;
+              }
+
+              @Override protected void onDestroy() { if (SonnerieService.ecran == this) SonnerieService.ecran = null; super.onDestroy(); }
+          }
+          RV_EOF_13
+          echo "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" | base64 -d > app/reveil.keystore
+          mkdir -p app/src/main/assets
+          cp index.html app/src/main/assets/index.html
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Compiler
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Publier l'APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk Reveil.apk
+          gh release create "v${{ github.run_number }}" Reveil.apk --title "Réveil ${{ github.run_number }}" --notes "Télécharge Reveil.apk sur le téléphone et installe-le." --latest

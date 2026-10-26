@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Réveil 5×8</title>
+<style>
+:root{
+  --bg:#EEF1F3; --surface:#FFFFFF; --line:#D5DBE0; --text:#1B2329; --muted:#5E6B75;
+  --matin:#F2C400; --matin-t:#2A2200; --am:#D93A2B; --am-t:#FFFFFF;
+  --nuit:#1E7FCB; --nuit-t:#FFFFFF; --repos:#E3E7EA; --repos-t:#33404A;
+  --accent:#E8692A; --froid:#5F8298; --ok:#3BB273;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151C21; --surface:#1F2830; --line:#33404A; --text:#E9EEF1; --muted:#9AA7B0;
+    --repos:#2B363F; --repos-t:#C9D3DA;
+    color-scheme: dark;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.4 "Roboto Flex",Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+main{max-width:720px;margin:0 auto;padding:10px 10px 70px}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{flex:1;border:0;background:none;padding:12px 0;font-weight:600;color:var(--muted)}
+nav button[aria-selected="true"]{color:var(--text);box-shadow:inset 0 3px 0 var(--accent)}
+
+.carte{background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.etiq{display:block;color:var(--muted);font-size:.8rem;margin-bottom:4px}
+.gros{font-size:2.4rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.sous{color:var(--muted);font-size:.95rem;margin-top:2px}
+.pastille{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.85rem;font-weight:700;margin-left:6px;vertical-align:middle}
+.alerte{margin-top:8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--am) 18%,transparent);font-size:.88rem;display:flex;gap:8px;align-items:center}
+.alerte span{flex:1}
+.alerte button{border:0;border-radius:8px;padding:6px 10px;background:var(--accent);color:#fff;font-weight:600;white-space:nowrap}
+.info{margin-top:8px;font-size:.88rem;color:var(--muted)}
+.boutons{display:flex;gap:8px;margin-top:10px}
+.boutons button{flex:1;border:0;border-radius:10px;padding:11px 6px;font-weight:600}
+.bPasser{background:var(--repos);color:var(--repos-t)}
+.bTest{background:var(--froid);color:#fff}
+
+.mois{display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px}
+.mois h2{margin:0;font-size:1.1rem;text-transform:capitalize}
+.mois button{border:0;background:var(--surface);width:38px;height:38px;border-radius:50%;font-size:1.2rem}
+.grille{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.jsem{text-align:center;font-size:.7rem;color:var(--muted)}
+.jour{border:0;border-radius:6px;min-height:46px;padding:2px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;position:relative}
+.jour .n{font-size:.72rem;align-self:flex-end;padding-right:3px}
+.jour .p{font-size:.66rem;font-weight:700}
+.jour .h{font-size:.68rem;font-variant-numeric:tabular-nums;opacity:.9}
+.jour.hors{opacity:.35}
+.jour.auj{outline:3px solid var(--text);outline-offset:-3px}
+.jour.modif::after{content:"";position:absolute;left:4px;top:4px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.M{background:var(--matin);color:var(--matin-t)} .A{background:var(--am);color:var(--am-t)}
+.N1,.N2{background:var(--nuit);color:var(--nuit-t)} .R,.X{background:var(--repos);color:var(--repos-t)}
+.aide{color:var(--muted);font-size:.82rem;margin:8px 2px}
+
+.ligne{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0}
+.ligne label,.ligne>span{flex:1}
+input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;min-height:44px}
+.poste{display:flex;align-items:center;gap:10px;margin:8px 0}
+.poste .tag{width:12px;align-self:stretch;border-radius:4px}
+.poste .nom{flex:1;font-weight:600}
+.interr{width:52px;height:30px;border-radius:15px;border:0;background:var(--line);position:relative;flex:none}
+.interr::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+.interr[aria-checked="true"]{background:var(--ok)}
+.interr[aria-checked="true"]::after{left:25px}
+.choix{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.choix button{border:0;background:var(--bg);padding:9px 12px}
+.choix button[aria-pressed="true"]{background:var(--froid);color:#fff;font-weight:600}
+.sys{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.9rem}
+.sys span{flex:1}
+.sys button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px}
+.toast{position:fixed;left:50%;bottom:66px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.vu{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast,.interr::after{transition:none}}
+@media (max-width:599px){
+  .gros{font-size:2rem}
+  .carte{padding:10px 12px}
+  .jour{min-height:40px}
+  .jour .h{font-size:.64rem}
+  .boutons button{padding:9px 6px}
+  .aide{display:none}
+  #vueReglages .aide{display:block}
+}
+@media (min-width:700px){
+  main{max-width:1180px;padding:16px 20px 70px}
+  #vueReveil:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:20px;align-items:start}
+  .jour{min-height:60px}
+  .gros{font-size:3rem}
+}
+</style>
+</head>
+<body>
+<main>
+  <section id="vueReveil">
+    <div>
+      <div class="carte">
+        <span class="etiq">Prochain réveil</span>
+        <div class="gros" id="pQuand">—</div>
+        <div class="sous" id="pPoste"></div>
+        <div class="info" id="pInfo" hidden></div>
+        <div id="pAlertes"></div>
+        <div class="boutons">
+          <button class="bPasser" id="bPasser">Passer ce réveil</button>
+          <button class="bTest" id="bTest">🔔 Tester (5 s)</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="mois">
+        <button id="prec" aria-label="Mois précédent">‹</button>
+        <h2 id="titreMois"></h2>
+        <button id="suiv" aria-label="Mois suivant">›</button>
+      </div>
+      <div class="grille" id="grille"></div>
+      <p class="aide">Touche un jour : 1 fois = Repos (réveil du Repos), 2 fois = 🔕 pas de réveil, 3 fois = retour au poste normal.</p>
+    </div>
+  </section>
+
+  <section id="vueReglages" hidden>
+    <div class="carte">
+      <h3 style="margin:0 0 6px;font-size:1rem">Cycle</h3>
+      <div class="ligne"><label for="debut">Un jour de premier Matin</label><input type="date" id="debut"></div>
+    </div>
+    <div class="carte">
+      <h3 style="margin:0 0 6px;font-size:1rem">Heure de réveil par poste</h3>
+      <div id="postes"></div>
+    </div>
+    <div class="carte">
+      <h3 style="margin:0 0 6px;font-size:1rem">Sonnerie</h3>
+      <div class="ligne"><span>Répéter dans</span><div class="choix" id="cSnooze"><button data-v="5">5 min</button><button data-v="10">10 min</button></div></div>
+      <div class="ligne"><span>Vibreur</span><button class="interr" id="cVib" role="switch" aria-label="Vibreur"></button></div>
+      <p class="aide">La sonnerie est celle du réveil de ton téléphone. Elle sonne même en mode silencieux, monte doucement en 30 s et s’arrête seule après 10 min.</p>
+    </div>
+    <div class="carte">
+      <h3 style="margin:0 0 6px;font-size:1rem">Pour que le réveil sonne à coup sûr</h3>
+      <div id="sysListe"><p class="aide" style="margin:0">Disponible dans l’appli installée.</p></div>
+    </div>
+  </section>
+</main>
+<nav>
+  <button id="tReveil" aria-selected="true">Réveil</button>
+  <button id="tReglages" aria-selected="false">Réglages</button>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const CYCLE=['M','M','A','A','N1','N2','R','R','R','R'];
+const NOMS={M:'Matin',A:'Après-midi',N1:'Nuit 1',N2:'Nuit 2',R:'Repos',X:'Pas de réveil'};
+const COURT={M:'Matin',A:'AM',N1:'Nuit',N2:'Nuit',R:'Repos',X:'🔕'};
+const COUL={M:'var(--matin)',A:'var(--am)',N1:'var(--nuit)',N2:'var(--nuit)',R:'var(--repos-t)'};
+const DEFAUT={debut:'2026-10-25',overrides:{},snooze:5,vibreur:true,heures:{
+  M:{t:'04:00',on:true},A:{t:'07:00',on:true},N1:{t:'07:00',on:true},N2:{t:'14:00',on:true},R:{t:'07:00',on:true}}};
+const CLE='reveil58';
+const N=()=>window.Natif;
+let R=charger(),vue=new Date();vue.setDate(1);
+
+function charger(){try{const s=localStorage.getItem(CLE);if(s){const o=JSON.parse(s);return Object.assign(JSON.parse(JSON.stringify(DEFAUT)),o)}}catch(e){}return JSON.parse(JSON.stringify(DEFAUT))}
+let tt;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('vu');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('vu'),1600)}
+function sauver(msg){try{localStorage.setItem(CLE,JSON.stringify(R))}catch(e){}
+  if(N()&&N().config)N().config(JSON.stringify(R));
+  if(msg)toast(msg);rafraichir()}
+
+const cle=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const jourNum=s=>{const[y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d)/864e5};
+const posteCycle=k=>CYCLE[(((jourNum(k)-jourNum(R.debut))%10)+10)%10];
+const poste=k=>R.overrides[k]?(R.overrides[k]==='X'?'X':'R'):posteCycle(k);
+const heurePoste=p=>{if(p==='X')return null;const h=R.heures[p];return h&&h.on&&h.t?h.t:null};
+
+/* Prochain réveil calculé ici (l’appli Android fait le même calcul et programme le vrai réveil) */
+function prochainJS(){
+  const now=new Date();
+  for(let j=0;j<14;j++){const d=new Date(now);d.setDate(d.getDate()+j);const k=cle(d),p=poste(k),h=heurePoste(p);if(!h)continue;
+    const [hh,mm]=h.split(':').map(Number);const dt=new Date(d);dt.setHours(hh,mm,0,0);if(dt>now)return {dt,p}}
+  return null;
+}
+function quandTxt(dt){const a=new Date();a.setHours(0,0,0,0);const d=new Date(dt);d.setHours(0,0,0,0);const diff=Math.round((d-a)/864e5);
+  const h=dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  return diff===0?'Aujourd’hui '+h:diff===1?'Demain '+h:dt.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+' '+h}
+
+function rafraichir(){
+  const q=document.getElementById('pQuand'),po=document.getElementById('pPoste'),inf=document.getElementById('pInfo'),bp=document.getElementById('bPasser');
+  let info=null;
+  if(N()&&N().prochain){try{info=JSON.parse(N().prochain())}catch(e){}}
+  if(info){
+    q.textContent=info.quand||'Aucun réveil';
+    po.textContent=info.poste?'⏰ '+info.poste:'';
+    const lignes=[];
+    if(info.repetition)lignes.push('🔁 Répétition prévue à '+info.repetition);
+    if(info.passe)lignes.push('⏭ Réveil passé : '+info.passe);
+    inf.hidden=!lignes.length;inf.textContent=lignes.join(' · ');
+    bp.textContent=info.passe?'Reprendre le réveil passé':'Passer ce réveil';bp.dataset.passe=info.passe?'1':'';
+  }else{
+    const p=prochainJS();q.textContent=p?quandTxt(p.dt):'Aucun réveil';po.textContent=p?'⏰ '+NOMS[p.p]:'';inf.hidden=true;
+  }
+  alertes();planning();
+}
+
+function etatSys(){if(!(N()&&N().systeme))return null;try{return JSON.parse(N().systeme())}catch(e){return null}}
+const SYS=[['notif','Notifications autorisées','Sans elles, pas d’écran de réveil.'],['plein','Affichage plein écran','Pour que le réveil s’affiche sur l’écran verrouillé.'],
+  ['reveils','Réveils à l’heure exacte','Sinon Android peut retarder le réveil.'],['batterie','Pas de mise en veille de l’appli','Recommandé sur Samsung.']];
+function alertes(){
+  const e=etatSys(),box=document.getElementById('pAlertes');
+  if(!e){box.innerHTML='';return}
+  const ko=SYS.filter(s=>e[s[0]]===false&&s[0]!=='batterie');
+  box.innerHTML=ko.map(s=>'<div class="alerte"><span>⚠️ '+s[1]+' : non</span><button data-r="'+s[0]+'">Régler</button></div>').join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>N().reglage(b.dataset.r));
+}
+function rendreSys(){
+  const e=etatSys(),el=document.getElementById('sysListe');
+  if(!e){el.innerHTML='<p class="aide" style="margin:0">Disponible dans l’appli installée.</p>';return}
+  el.innerHTML=SYS.map(s=>'<div class="sys"><span>'+(e[s[0]]?'✅ ':'⚠️ ')+s[1]+(e[s[0]]?'':'<br><small style="color:var(--muted)">'+s[2]+'</small>')+'</span>'+(e[s[0]]?'':'<button data-r="'+s[0]+'">Régler</button>')+'</div>').join('');
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>N().reglage(b.dataset.r));
+}
+
+function planning(){
+  const g=document.getElementById('grille');g.innerHTML='';
+  ['L','M','M','J','V','S','D'].forEach(j=>g.insertAdjacentHTML('beforeend','<div class="jsem">'+j+'</div>'));
+  document.getElementById('titreMois').textContent=vue.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  const d=new Date(vue);d.setDate(1-((vue.getDay()+6)%7));
+  const auj=cle(new Date());
+  for(let i=0;i<42;i++){
+    const k=cle(d),p=poste(k),h=heurePoste(p),b=document.createElement('button');
+    b.className='jour '+p+(d.getMonth()!==vue.getMonth()?' hors':'')+(k===auj?' auj':'')+(R.overrides[k]?' modif':'');
+    b.innerHTML='<span class="n">'+d.getDate()+'</span><span class="p">'+COURT[p]+'</span><span class="h">'+(h?h.replace(/^0/,''):'🔕')+'</span>';
+    b.setAttribute('aria-label',d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+', '+NOMS[p]+(h?', réveil à '+h:', pas de réveil'));
+    b.onclick=()=>{
+      const o=R.overrides[k],base=posteCycle(k);
+      if(!o){R.overrides[k]=base==='R'?'X':'R';sauver(base==='R'?'🔕 Pas de réveil ce jour-là':'Passé en Repos')}
+      else if(o==='R'){R.overrides[k]='X';sauver('🔕 Pas de réveil ce jour-là')}
+      else{delete R.overrides[k];sauver('Retour au poste : '+NOMS[base])}
+    };
+    g.appendChild(b);d.setDate(d.getDate()+1);
+    if(i===34&&d.getMonth()!==vue.getMonth())break;
+  }
+}
+
+function reglages(){
+  document.getElementById('debut').value=R.debut;
+  const c=document.getElementById('postes');c.innerHTML='';
+  ['M','A','N1','N2','R'].forEach(p=>{
+    const h=R.heures[p]||(R.heures[p]={t:'07:00',on:true});
+    const l=document.createElement('div');l.className='poste';
+    l.innerHTML='<span class="tag" style="background:'+COUL[p]+'"></span><span class="nom">'+NOMS[p]+'</span><input type="time" value="'+h.t+'" aria-label="Heure du réveil '+NOMS[p]+'"><button class="interr" role="switch" aria-checked="'+(h.on!==false)+'" aria-label="Réveil '+NOMS[p]+'"></button>';
+    const inp=l.querySelector('input'),sw=l.querySelector('.interr');
+    inp.disabled=h.on===false;
+    inp.onchange=()=>{if(inp.value){h.t=inp.value;sauver('Réveil '+NOMS[p]+' à '+h.t)}};
+    sw.onclick=()=>{h.on=!(h.on!==false);sauver(h.on?'Réveil '+NOMS[p]+' activé':'Pas de réveil les jours de '+NOMS[p]);reglages()};
+    c.appendChild(l);
+  });
+  document.querySelectorAll('#cSnooze button').forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.v)===R.snooze));
+  document.getElementById('cVib').setAttribute('aria-checked',R.vibreur!==false);
+  rendreSys();
+}
+document.getElementById('debut').onchange=e=>{if(e.target.value){R.debut=e.target.value;sauver('Cycle recalculé')}};
+document.querySelectorAll('#cSnooze button').forEach(b=>b.onclick=()=>{R.snooze=Number(b.dataset.v);sauver('Répéter : '+R.snooze+' min');reglages()});
+document.getElementById('cVib').onclick=()=>{R.vibreur=!(R.vibreur!==false);sauver(R.vibreur?'Vibreur activé':'Vibreur coupé');reglages()};
+
+document.getElementById('bPasser').onclick=e=>{
+  if(!(N()&&N().passer)){toast('Disponible dans l’appli installée');return}
+  if(e.currentTarget.dataset.passe){N().reprendre();toast('Réveil repris')}else{N().passer();toast('⏭ Ce réveil ne sonnera pas')}
+  rafraichir();
+};
+document.getElementById('bTest').onclick=()=>{
+  if(!(N()&&N().tester)){toast('Disponible dans l’appli installée');return}
+  N().tester();toast('🔔 Ça sonne dans 5 secondes…');
+};
+document.getElementById('prec').onclick=()=>{vue.setMonth(vue.getMonth()-1);planning()};
+document.getElementById('suiv').onclick=()=>{vue.setMonth(vue.getMonth()+1);planning()};
+function onglet(nom){['Reveil','Reglages'].forEach(n=>{document.getElementById('vue'+n).hidden=n!==nom;document.getElementById('t'+n).setAttribute('aria-selected',n===nom)});
+  if(nom==='Reglages')reglages();else rafraichir()}
+document.getElementById('tReveil').onclick=()=>onglet('Reveil');
+document.getElementById('tReglages').onclick=()=>onglet('Reglages');
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){rafraichir();rendreSys()}});
+window.majEcran=()=>{rafraichir();if(!document.getElementById('vueReglages').hidden)rendreSys()};
+
+if(N()&&N().config)N().config(JSON.stringify(R)); // l’appli Android reçoit les réglages au démarrage
+rafraichir();setInterval(rafraichir,60000);
+</script>
+</body>
+</html>
